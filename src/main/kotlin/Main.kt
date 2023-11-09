@@ -16,8 +16,8 @@ import java.util.concurrent.CopyOnWriteArrayList
 import javax.net.ssl.*
 import kotlin.concurrent.thread
 
-const val fingerWidth = 300;
-const val fingerHeight = 400;
+const val fingerWidth = 596
+const val fingerHeight = 596
 fun main() {
     println("Hello World!")
     //println(Paths.get("keycode.jks").toAbsolutePath().toString());
