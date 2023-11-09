@@ -12,6 +12,7 @@ import java.security.KeyStore
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
+import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import javax.net.ssl.*
 import kotlin.concurrent.thread
@@ -86,10 +87,10 @@ fun main() {
                         val profile = gson.fromJson(LZ4K.decompressFromBase64(profile64), Profile::class.java)
 
                         val fingers = getFingerData(database)
-                        val proFinger1 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger1))
-                        val proFinger2 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger2))
-                        val proFinger3 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger3))
-                        val proFinger4 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger4))
+                        val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger1))
+                        val proFinger2 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger2))
+                        val proFinger3 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger3))
+                        val proFinger4 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger4))
 
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
                         if (result.first){
@@ -112,10 +113,10 @@ fun main() {
                         val finger = gson.fromJson(LZ4K.decompressFromBase64(finger64), FingerData::class.java)
 
                         val fingers = getFingerData(database)
-                        val proFinger1 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger1))
-                        val proFinger2 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger2))
-                        val proFinger3 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger3))
-                        val proFinger4 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger4))
+                        val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(finger.finger1))
+                        val proFinger2 = FingerprintTemplate(base64ToFingerprintImage(finger.finger2))
+                        val proFinger3 = FingerprintTemplate(base64ToFingerprintImage(finger.finger3))
+                        val proFinger4 = FingerprintTemplate(base64ToFingerprintImage(finger.finger4))
 
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
 
@@ -178,6 +179,17 @@ fun LZ4KToFingerprintImage(string: String): FingerprintImage? {
     }
 }
 
+private fun base64ToFingerprintImage(string: String): FingerprintImage? {
+    return try{
+        val base64decoder = Base64.getDecoder()
+        val data = base64decoder.decode(string)
+        return FingerprintImage(fingerWidth, fingerHeight, data)
+    }catch (e: Exception){
+        e.printStackTrace()
+        null
+    }
+}
+
 fun fingerMatch(
     proFinger1: FingerprintTemplate,
     proFinger2: FingerprintTemplate,
@@ -187,10 +199,10 @@ fun fingerMatch(
 ):Pair<Boolean, Int>{
     for (finger in fingers){
         //이제 여기서 profile.finger와 proFinger를 비교
-        val finger1 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger1))
-        val finger2 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger2))
-        val finger3 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger3))
-        val finger4 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger4))
+        val finger1 = FingerprintTemplate(base64ToFingerprintImage(finger.finger1))
+        val finger2 = FingerprintTemplate(base64ToFingerprintImage(finger.finger2))
+        val finger3 = FingerprintTemplate(base64ToFingerprintImage(finger.finger3))
+        val finger4 = FingerprintTemplate(base64ToFingerprintImage(finger.finger4))
 
         val finger1Matcher = FingerprintMatcher(finger1)
         val finger2Matcher = FingerprintMatcher(finger2)
