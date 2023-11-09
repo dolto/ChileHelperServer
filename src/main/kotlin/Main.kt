@@ -7,6 +7,7 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
 import java.io.IOException
+import java.nio.charset.Charset
 import java.nio.file.Paths
 import java.security.KeyStore
 import java.sql.Connection
@@ -64,7 +65,8 @@ fun main() {
 
         val sslServerSocketFactory = sslContext.serverSocketFactory
         val serverSocket = sslServerSocketFactory.createServerSocket(55550) as SSLServerSocket
-
+        val encoder = Base64.getEncoder()
+        val decoder = Base64.getDecoder()
         val sslParams = SSLParameters()
         sslParams.protocols = arrayOf("TLSv1.2")
         sslParams.cipherSuites = arrayOf("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
@@ -84,7 +86,7 @@ fun main() {
                         socketAndIo.output.writeUTF("result_ok")
                         val profile64 = getSocketRead(socketAndIo.input).toByteArray(charset("UTF-8"))
                         // 암호화 해제
-                        val encoder = Base64.getEncoder()
+
                         val profile = gson.fromJson(encoder.encodeToString(profile64), Profile::class.java)
 
                         val fingers = getFingerData(database)
@@ -109,9 +111,9 @@ fun main() {
                     }
                     "Try_Login" -> {
                         socketAndIo.output.writeUTF("result_ok")
-                        val finger64 = getSocketRead(socketAndIo.input)
+                        val finger64 = getSocketRead(socketAndIo.input).toByteArray(charset("UTF-8"))
                         //암호화 해제
-                        val finger = gson.fromJson(LZ4K.decompressFromBase64(finger64), FingerData::class.java)
+                        val finger = gson.fromJson(encoder.encodeToString(finger64), FingerData::class.java)
 
                         val fingers = getFingerData(database)
                         val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(finger.finger1))
@@ -123,7 +125,7 @@ fun main() {
 
                         if (result.first){
                             val result = getProfile(database, result.second)
-                            val netMessage = LZ4K.compressToBase64(gson.toJson(result))
+                            val netMessage = decoder.decode(gson.toJson(result)).toString(Charset.forName("UTF-8"))
                             socketAndIo.output.writeUTF(netMessage)
                         }
                         else{
