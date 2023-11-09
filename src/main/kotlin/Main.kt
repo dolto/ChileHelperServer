@@ -75,16 +75,17 @@ fun main() {
             println("Processing Server Wait...")
             val socket = serverSocket.accept() as SSLSocket
             val socketAndIo = SocketAndIO(socket, DataInputStream(socket.inputStream), DataOutputStream(socket.outputStream))
-            socketList.add(socketAndIo);
+            socketList.add(socketAndIo)
 
             val serverAcceptData = thread(true){
                 println("Server Accept Now Wait for Data")
                 when(val dataString = getSocketRead(socketAndIo.input)){
                     "Input_Profile" -> {
                         socketAndIo.output.writeUTF("result_ok")
-                        val profile64 = getSocketRead(socketAndIo.input)
+                        val profile64 = getSocketRead(socketAndIo.input).toByteArray(charset("UTF-8"))
                         // 암호화 해제
-                        val profile = gson.fromJson(LZ4K.decompressFromBase64(profile64), Profile::class.java)
+                        val encoder = Base64.getEncoder()
+                        val profile = gson.fromJson(encoder.encodeToString(profile64), Profile::class.java)
 
                         val fingers = getFingerData(database)
                         val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger1))
