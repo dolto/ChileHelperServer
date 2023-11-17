@@ -20,8 +20,8 @@ import javax.imageio.ImageIO
 import javax.net.ssl.*
 import kotlin.concurrent.thread
 
-const val fingerWidth = 100
-const val fingerHeight = 100
+//const val fingerWidth = 100
+//const val fingerHeight = 100
 fun main() {
     println("Hello World!")
     //println(Paths.get("keycode.jks").toAbsolutePath().toString());
@@ -282,7 +282,7 @@ fun connectToDatabase(): Connection? {
 fun LZ4KToFingerprintImage(string: String): FingerprintImage? {
     return try {
         val data = LZ4K.decompressFromBase64(string)?.toByteArray(charset("UTF-8"))
-        return FingerprintImage(fingerWidth, fingerHeight, data)
+        return FingerprintImage(data)
     } catch (e: Exception) {
         e.printStackTrace()
         return null
@@ -293,7 +293,7 @@ private fun base64ToFingerprintImage(string: String): FingerprintImage? {
     return try{
         val base64decoder = Base64.getDecoder()
         val data = base64decoder.decode(string)
-        return FingerprintImage(fingerWidth, fingerHeight, data)
+        return FingerprintImage(data)
     }catch (e: Exception){
         e.printStackTrace()
         null
