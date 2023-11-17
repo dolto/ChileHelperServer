@@ -3,21 +3,25 @@ import com.google.gson.Gson
 import com.machinezoo.sourceafis.FingerprintImage
 import com.machinezoo.sourceafis.FingerprintMatcher
 import com.machinezoo.sourceafis.FingerprintTemplate
-import java.io.DataInputStream
-import java.io.DataOutputStream
-import java.io.File
-import java.io.IOException
+import org.apache.commons.io.output.FileWriterWithEncoding
+import java.awt.image.BufferedImage
+import java.io.*
+import java.lang.Integer.min
+import java.nio.charset.Charset
+import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.KeyStore
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.SQLException
+import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
+import javax.imageio.ImageIO
 import javax.net.ssl.*
 import kotlin.concurrent.thread
 
-const val fingerWidth = 300;
-const val fingerHeight = 400;
+const val fingerWidth = 100
+const val fingerHeight = 100
 fun main() {
     println("Hello World!")
     //println(Paths.get("keycode.jks").toAbsolutePath().toString());
@@ -41,12 +45,12 @@ fun main() {
 
     println("Processing Server Loading...")
 
-    val database = connectToDatabase() ?: return; //mySQL과 연결
+    //val database = connectToDatabase() ?: return; //mySQL과 연결
     try {
         // SSLServerSocketFactory를 사용하여 SSLServerSocket을 생성
 
         ///인증서 연결부분
-        val keystorePath = Paths.get("keycode.jks").toAbsolutePath().toString()
+        val keystorePath = Paths.get("keycode.p12").toAbsolutePath().toString()
         val keystorePw = "chilehelper" //패스워드는 나중에 db에서 불러올 예정
 
         val keystore = KeyStore.getInstance("JKS")
@@ -63,7 +67,8 @@ fun main() {
 
         val sslServerSocketFactory = sslContext.serverSocketFactory
         val serverSocket = sslServerSocketFactory.createServerSocket(55550) as SSLServerSocket
-
+        val encoder = Base64.getEncoder()
+        val decoder = Base64.getDecoder()
         val sslParams = SSLParameters()
         sslParams.protocols = arrayOf("TLSv1.2")
         sslParams.cipherSuites = arrayOf("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
@@ -74,64 +79,170 @@ fun main() {
             println("Processing Server Wait...")
             val socket = serverSocket.accept() as SSLSocket
             val socketAndIo = SocketAndIO(socket, DataInputStream(socket.inputStream), DataOutputStream(socket.outputStream))
-            socketList.add(socketAndIo);
+            socketList.add(socketAndIo)
 
             val serverAcceptData = thread(true){
                 println("Server Accept Now Wait for Data")
                 when(val dataString = getSocketRead(socketAndIo.input)){
-                    "Input_Profile" -> {
-                        socketAndIo.output.writeUTF("result_ok")
-                        val profile64 = getSocketRead(socketAndIo.input)
-                        // 암호화 해제
-                        val profile = gson.fromJson(LZ4K.decompressFromBase64(profile64), Profile::class.java)
+//                    "Input_Profile" -> {
+//                        socketAndIo.output.writeUTF("result_ok")
+//                        val profile64 = getSocketRead(socketAndIo.input).toByteArray(charset("UTF-8"))
+//                        // 암호화 해제
+//
+//                        val profile = gson.fromJson(encoder.encodeToString(profile64), Profile::class.java)
+//
+//                        val fingers = getFingerData(database)
+//                        val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger1))
+//                        val proFinger2 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger2))
+//                        val proFinger3 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger3))
+//                        val proFinger4 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger4))
+//
+//                        val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
+//                        if (result.first){
+//                            profile.id = result.second
+//                            updateProfile(database, profile)
+//
+//                            socketAndIo.output.writeBoolean(true)
+//                        }else{
+//                            val tempid = getIndexID(database) + 1
+//                            profile.id = tempid
+//                            insertProfile(database, profile)
+//
+//                            socketAndIo.output.writeBoolean(false)
+//                        }
+//                    }
+//                    "Try_Login" -> {
+//                        socketAndIo.output.writeUTF("result_ok")
+//                        val finger64 = getSocketRead(socketAndIo.input).toByteArray(charset("UTF-8"))
+//                        //암호화 해제
+//                        val finger = gson.fromJson(encoder.encodeToString(finger64), FingerData::class.java)
+//
+//                        val fingers = getFingerData(database)
+//                        val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(finger.finger1))
+//                        val proFinger2 = FingerprintTemplate(base64ToFingerprintImage(finger.finger2))
+//                        val proFinger3 = FingerprintTemplate(base64ToFingerprintImage(finger.finger3))
+//                        val proFinger4 = FingerprintTemplate(base64ToFingerprintImage(finger.finger4))
+//
+//                        val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
+//
+//                        if (result.first){
+//                            val result = getProfile(database, result.second)
+//                            val netMessage = decoder.decode(gson.toJson(result)).toString(Charset.forName("UTF-8"))
+//                            socketAndIo.output.writeUTF(netMessage)
+//                        }
+//                        else{
+//                            socketAndIo.output.writeUTF("로그인 실패!")
+//                        }
+//                    }
+                    "Input_Image" -> {
+                        println("이미지를 테스트 수행")
+                        val data_size = socketAndIo.input.readInt()
+                        var count = 0
+                        val data = ByteArray(data_size)
+                        while(data_size > count){
+                            socketAndIo.input.read(data,count,min(data_size - count , 1024))
+                            count += 1024
+                        }
 
-                        val fingers = getFingerData(database)
-                        val proFinger1 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger1))
-                        val proFinger2 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger2))
-                        val proFinger3 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger3))
-                        val proFinger4 = FingerprintTemplate(LZ4KToFingerprintImage(profile.fingerDB.finger4))
+                        val data_test = String(data, Charsets.UTF_8)
+                        println("이미지를 파일로 임시 저장 크기 ${data_size}")
+                        //println("이미지 문자열: ${data_test}")
+                        val image = base64ToBufferedImage(data_test) as BufferedImage
+                        saveBufferedImageToFile(image, "test1.png")
+                        count = 0
+                        while(data_size > count){
+                            socketAndIo.output.write(data,count,min(data_size - count , 1024))
+                            count += 1024
+                        }
 
-                        val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
-                        if (result.first){
-                            profile.id = result.second
-                            updateProfile(database, profile)
-
-                            socketAndIo.output.writeBoolean(true)
-                        }else{
-                            val tempid = getIndexID(database) + 1
-                            profile.id = tempid
-                            insertProfile(database, profile)
-
-                            socketAndIo.output.writeBoolean(false)
+                    }
+                    "Input_Image1" -> {
+                        println("이미지를 테스트 수행")
+                        val data_size = socketAndIo.input.readInt()
+                        var count = 0
+                        val data = ByteArray(data_size)
+                        while(data_size > count){
+                            socketAndIo.input.read(data,count,min(data_size - count , 1024))
+                            count += 1024
+                        }
+                        val data_test = String(data, Charsets.UTF_8)
+                        println("이미지를 파일로 임시 저장 크기 ${data_size}")
+                        //println("이미지 문자열: ${data_test}")
+                        val image = base64ToBufferedImage(data_test) as BufferedImage
+                        saveBufferedImageToFile(image, "test2.png")
+                        count = 0
+                        while(data_size > count){
+                            socketAndIo.output.write(data,count,min(data_size - count , 1024))
+                            count += 1024
                         }
                     }
-                    "Try_Login" -> {
-                        socketAndIo.output.writeUTF("result_ok")
-                        val finger64 = getSocketRead(socketAndIo.input)
-                        //암호화 해제
-                        val finger = gson.fromJson(LZ4K.decompressFromBase64(finger64), FingerData::class.java)
-
-                        val fingers = getFingerData(database)
-                        val proFinger1 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger1))
-                        val proFinger2 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger2))
-                        val proFinger3 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger3))
-                        val proFinger4 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger4))
-
-                        val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
-
-                        if (result.first){
-                            val result = getProfile(database, result.second)
-                            val netMessage = LZ4K.compressToBase64(gson.toJson(result))
-                            socketAndIo.output.writeUTF(netMessage)
+                    "Input_Image2" -> {
+                        println("이미지를 테스트 수행")
+                        val data_size = socketAndIo.input.readInt()
+                        var count = 0
+                        val data = ByteArray(data_size)
+                        while(data_size > count){
+                            socketAndIo.input.read(data,count,min(data_size - count , 1024))
+                            count += 1024
                         }
-                        else{
-                            socketAndIo.output.writeUTF("로그인 실패!")
+                        val data_test = String(data, Charsets.UTF_8)
+                        println("이미지를 파일로 임시 저장 크기 ${data_size}")
+                        //println("이미지 문자열: ${data_test}")
+                        val image = base64ToBufferedImage(data_test) as BufferedImage
+                        saveBufferedImageToFile(image, "test3.png")
+                        count = 0
+                        while(data_size > count){
+                            socketAndIo.output.write(data,count,min(data_size - count , 1024))
+                            count += 1024
                         }
+                    }
+                    "Input_Image3" -> {
+                        println("이미지를 테스트 수행")
+                        val data_size = socketAndIo.input.readInt()
+                        var count = 0
+                        val data = ByteArray(data_size)
+                        while(data_size > count){
+                            socketAndIo.input.read(data,count,min(data_size - count , 1024))
+                            count += 1024
+                        }
+                        val data_test = String(data, Charsets.UTF_8)
+                        println("이미지를 파일로 임시 저장 크기 ${data_size}")
+                        //println("이미지 문자열: ${data_test}")
+                        val image = base64ToBufferedImage(data_test) as BufferedImage
+                        saveBufferedImageToFile(image, "test4.png")
+                        count = 0
+                        while(data_size > count){
+                            socketAndIo.output.write(data,count,min(data_size - count , 1024))
+                            count += 1024
+                        }
+
+                        val file_finger1 = Files.readAllBytes(Paths.get("test1.png"));
+                        val file_finger2 = Files.readAllBytes(Paths.get("test2.png"));
+                        val file_finger3 = Files.readAllBytes(Paths.get("test3.png"));
+                        val file_finger4 = Files.readAllBytes(Paths.get("test4.png"));
+
+                        val proFinger1 = FingerprintTemplate(FingerprintImage(file_finger1))
+                        val promatch = FingerprintMatcher(proFinger1)
+                        val proFinger2 = FingerprintTemplate(FingerprintImage(file_finger2))
+                        val proFinger3 = FingerprintTemplate(FingerprintImage(file_finger3))
+                        val proFinger4 = FingerprintTemplate(FingerprintImage(file_finger4))
+
+                        val similer0 = promatch.match(proFinger1)
+                        val similer1 = promatch.match(proFinger2)
+                        val similer2 = promatch.match(proFinger3)
+                        val similer3 = promatch.match(proFinger4)
+
+                        println("test0: ${similer0}, test1: ${similer1}, test2: ${similer2}, test3: ${similer3}")
+
                     }
                     else -> {
+                        val data_size = socketAndIo.input.readInt()
+                        val data = ByteArray(data_size)
+                        socketAndIo.input.read(data,0,data_size)
                         println(dataString)
                         println("${dataString}에코 수행")
-                        socketAndIo.output.writeUTF(dataString)
+                        println("${String(data, Charsets.UTF_8)}에코 수행")
+                        socketAndIo.output.write(data)
                     }
                 }
                 println("서버에서 처리를 완료함 (비연결성 지향을 위해)")
@@ -178,6 +289,52 @@ fun LZ4KToFingerprintImage(string: String): FingerprintImage? {
     }
 }
 
+private fun base64ToFingerprintImage(string: String): FingerprintImage? {
+    return try{
+        val base64decoder = Base64.getDecoder()
+        val data = base64decoder.decode(string)
+        return FingerprintImage(fingerWidth, fingerHeight, data)
+    }catch (e: Exception){
+        e.printStackTrace()
+        null
+    }
+}
+
+fun base64ToBufferedImage(base64String: String): BufferedImage? {
+    return try {
+        val base64decoder = Base64.getDecoder()
+        val data = base64decoder.decode(base64String)
+        val inputStream = ByteArrayInputStream(data)
+        return ImageIO.read(inputStream)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+fun base64ToByteArray(base64String: String): ByteArray?{
+    return try{
+        val base64Decoder = Base64.getDecoder()
+        val data = base64Decoder.decode(base64String)
+        val inputStream = ByteArrayInputStream(data)
+        return inputStream.readBytes()
+    } catch (e: Exception) {
+        e.printStackTrace()
+        null
+    }
+}
+
+fun saveBufferedImageToFile(bufferedImage: BufferedImage, filePath: String) {
+    try {
+        val outputFile = File(filePath)
+        ImageIO.write(bufferedImage, "png", outputFile)
+        println("Image saved successfully to: $filePath")
+    } catch (e: Exception) {
+        e.printStackTrace()
+        println("Error saving image to file")
+    }
+}
+
 fun fingerMatch(
     proFinger1: FingerprintTemplate,
     proFinger2: FingerprintTemplate,
@@ -187,10 +344,10 @@ fun fingerMatch(
 ):Pair<Boolean, Int>{
     for (finger in fingers){
         //이제 여기서 profile.finger와 proFinger를 비교
-        val finger1 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger1))
-        val finger2 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger2))
-        val finger3 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger3))
-        val finger4 = FingerprintTemplate(LZ4KToFingerprintImage(finger.finger4))
+        val finger1 = FingerprintTemplate(base64ToFingerprintImage(finger.finger1))
+        val finger2 = FingerprintTemplate(base64ToFingerprintImage(finger.finger2))
+        val finger3 = FingerprintTemplate(base64ToFingerprintImage(finger.finger3))
+        val finger4 = FingerprintTemplate(base64ToFingerprintImage(finger.finger4))
 
         val finger1Matcher = FingerprintMatcher(finger1)
         val finger2Matcher = FingerprintMatcher(finger2)

@@ -5,7 +5,7 @@ import javax.net.ssl.SSLSocketFactory
 fun main() {
 
     //인증서 신뢰 구성
-    val keystorePath = Paths.get("keycode.jks").toAbsolutePath().toString()
+    val keystorePath = Paths.get("keycode.p12").toAbsolutePath().toString()
     val keystorePw = "chilehelper" //패스워드는 나중에 db에서 불러올 예정
     System.setProperty("javax.net.ssl.trustStore", keystorePath)
     System.setProperty("javax.net.ssl.trustStorePassword", keystorePw)
