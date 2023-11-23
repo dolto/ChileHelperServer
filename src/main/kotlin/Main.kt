@@ -235,13 +235,10 @@ fun main() {
 //
 //                    }
                     else -> {
-                        val data_size = socketAndIo.input.readInt()
-                        val data = ByteArray(data_size)
-                        socketAndIo.input.read(data,0,data_size)
-                        println(dataString)
+                        val data = getSocketRead(socketAndIo.input)
+                        getSocketWrite(socketAndIo.output, data)
                         println("${dataString}에코 수행")
                         println("${String(data, Charsets.UTF_8)}에코 수행")
-                        socketAndIo.output.write(data)
                     }
                 }
                 println("서버에서 처리를 완료함 (비연결성 지향을 위해)")
