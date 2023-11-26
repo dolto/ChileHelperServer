@@ -75,6 +75,7 @@ fun main() {
         serverSocket.sslParameters = sslParams
 
         val socketList = CopyOnWriteArrayList<SocketAndIO>()
+
         while (true){
             println("Processing Server Wait...")
             val socket = serverSocket.accept() as SSLSocket
@@ -87,9 +88,15 @@ fun main() {
                     "Input_Profile" -> {
                         //socketAndIo.output.writeUTF("result_ok")
                         val profile64 = getSocketRead(socketAndIo.input)
-                        // 암호화 해제
 
+                        println("연결 되었음" + profile64)
+
+                        // 암호화 해제
                         val profile = gson.fromJson(encoder.encodeToString(profile64), Profile::class.java)
+
+                        println("연결 되었음" + profile)
+
+                        println("Josn을 List로 변환 완료")
 
                         val fingers = getFingerData(database)
                         val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger1))
@@ -97,15 +104,22 @@ fun main() {
                         val proFinger3 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger3))
                         val proFinger4 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger4))
 
+
+
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
+
                         if (result.first){
-                            profile.id = result.second
+
+                            println("있음")
+                            //profile.id = result.second
                             updateProfile(database, profile)
 
                             getSocketWrite(socketAndIo.output, "Ok".toByteArray(Charsets.UTF_8))//이미 있는 유저를 갱신한다는 뜻
                         }else{
+                            println("ID 없음, Proflie = " + profile)
                             val tempid = getIndexID(database) + 1
                             profile.id = tempid
+                            println("ID 생성" + profile.id)
                             insertProfile(database, profile)
 
                             getSocketWrite(socketAndIo.output, "Err".toByteArray(Charsets.UTF_8))//이미 있는 유저가 없다는 뜻
@@ -285,9 +299,9 @@ fun getSocketWrite(output: DataOutputStream, data: ByteArray){
 }
 
 fun connectToDatabase(): Connection? {
-    val url = "jdbc:mysql://localhost:3306/kotlindb"
-    val user = "kotlinuser"
-    val password = "password"
+    val url = "jdbc:mysql://localhost:413/child_helper"
+    val user = "User5"
+    val password = "0000"
 
     return try {
         DriverManager.getConnection(url, user, password)
