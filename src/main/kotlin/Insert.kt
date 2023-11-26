@@ -7,8 +7,8 @@ class Insert {
 
 // 사용법
 // 1. Profile에 아이디를 잘 집어 넣어 준다.
-// 2. insert_Data에 매개변수로 (database, profile) 넣고 돌린다.
-// 3. 끝.
+// 2. insert_Data에 매개변수로 (database, Profile 형태 데이터) 넣고 돌린다.
+// 3. 데이터 베이스에 안전하게 들어간다.
 
 fun insert_Data(connection: Connection, profile: Profile){
     val ins_NameData: NameData = profile.nameDB
@@ -87,7 +87,7 @@ fun inserAdresstData(connection: Connection, id : Int, data_list : MutableList<A
         // MutableList만큼 반복
         for(i in 0 .. (data_list.size -1)){
             // 삽입할 데이터 및 SQL 쿼리문 작성
-            val insertQuery = "INSERT INTO regadress (ID, Adress, reg_order) VALUES (?, ?, ?)"
+            val insertQuery = "INSERT IGNORE INTO regadress (ID, Adress, reg_order) VALUES (?, ?, ?)"
 
             // PreparedStatement를 사용하여 쿼리 실행
             connection.prepareStatement(insertQuery).use { preparedStatement ->
@@ -115,7 +115,7 @@ fun insertPhonetData(connection: Connection, id : Int, data_list : MutableList<P
         // MutableList만큼 반복
         for(i in 0 .. (data_list.size -1)){
             // 삽입할 데이터 및 SQL 쿼리문 작성
-            val insertQuery = "INSERT INTO regphonenumber (ID, PhoneNumber, reg_order) VALUES (?, ?, ?)"
+            val insertQuery = "INSERT IGNORE INTO regphonenumber (ID, PhoneNumber, reg_order) VALUES (?, ?, ?)"
 
             // PreparedStatement를 사용하여 쿼리 실행
             connection.prepareStatement(insertQuery).use { preparedStatement ->
@@ -143,7 +143,7 @@ fun insertMemotData(connection: Connection, id : Int, data_list : MutableList<Me
         // MutableList만큼 반복
         for(i in 0 .. (data_list.size -1)){
             // 삽입할 데이터 및 SQL 쿼리문 작성
-            val insertQuery = "INSERT INTO regmemo (ID, Memo, reg_order) VALUES (?, ?, ?)"
+            val insertQuery = "INSERT IGNORE INTO regmemo (ID, Memo, reg_order) VALUES (?, ?, ?)"
 
             // PreparedStatement를 사용하여 쿼리 실행
             connection.prepareStatement(insertQuery).use { preparedStatement ->

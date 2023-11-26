@@ -76,6 +76,10 @@ fun main() {
 
         val socketList = CopyOnWriteArrayList<SocketAndIO>()
 
+        // 테스트 공간
+
+        // 테스트 공간
+
         while (true){
             println("Processing Server Wait...")
             val socket = serverSocket.accept() as SSLSocket
