@@ -3,12 +3,9 @@ import com.google.gson.Gson
 import com.machinezoo.sourceafis.FingerprintImage
 import com.machinezoo.sourceafis.FingerprintMatcher
 import com.machinezoo.sourceafis.FingerprintTemplate
-import org.apache.commons.io.output.FileWriterWithEncoding
 import java.awt.image.BufferedImage
 import java.io.*
 import java.lang.Integer.min
-import java.nio.charset.Charset
-import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.KeyStore
 import java.sql.Connection
@@ -78,6 +75,8 @@ fun main() {
 
         // 테스트 공간
 
+        var profile_test = "{\"adressDB\":[{\"adress\":\"test2a1\",\"reg_order\":0},{\"adress\":\"test2m2\",\"reg_order\":5}],\"fingerDB\":{\"finger1\":\"\",\"finger2\":\"\",\"finger3\":\"\",\"finger4\":\"\",\"id\":-1},\"id\":-1,\"memoDB\":[{\"memo\":\"test2m1\",\"reg_order\":2},{\"memo\":\"test2a2\",\"reg_order\":3}],\"nameDB\":{\"id\":-1,\"name\":\"test2\",\"profile\":\"Test\"},\"phoneNumberDB\":[{\"phoneNumber\":\"test2p1\",\"reg_order\":1},{\"phoneNumber\":\"test2p2\",\"reg_order\":4}]}"
+
         // 테스트 공간
 
         while (true){
@@ -91,12 +90,13 @@ fun main() {
                 when(val dataString = socketAndIo.input.readUTF()){
                     "Input_Profile" -> {
                         //socketAndIo.output.writeUTF("result_ok")
-                        val profile64 = getSocketRead(socketAndIo.input)
+                        val profile64 =String(getSocketRead(socketAndIo.input), Charsets.UTF_8)
 
                         println("연결 되었음" + profile64)
 
                         // 암호화 해제
-                        val profile = gson.fromJson(encoder.encodeToString(profile64), Profile::class.java)
+                        val profile = gson.fromJson(profile64, Profile::class.java)
+                        //val profile = Json.decodeFromString<Profile>(profile64)
 
                         println("연결 되었음" + profile)
 
@@ -113,7 +113,6 @@ fun main() {
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
 
                         if (result.first){
-
                             println("있음")
                             //profile.id = result.second
                             updateProfile(database, profile)
@@ -124,7 +123,9 @@ fun main() {
                             val tempid = getIndexID(database) + 1
                             profile.id = tempid
                             println("ID 생성" + profile.id)
-                            insertProfile(database, profile)
+
+                            deleteAllById(database, profile.id);
+                            insert_Data(database, profile)
 
                             getSocketWrite(socketAndIo.output, "Err".toByteArray(Charsets.UTF_8))//이미 있는 유저가 없다는 뜻
                         }
