@@ -1,5 +1,6 @@
 import java.lang.StringBuilder
 import java.sql.Connection
+import java.sql.SQLException
 
 data class NameData(
     var id: Int, val name: String, val profile: String
@@ -57,6 +58,7 @@ fun updateFingerData(database: Connection, data:FingerData){
     statement.setString(3, data.finger4)
     statement.executeUpdate()
 }
+
 fun insertFingerData(database: Connection, data:FingerData){
     val sql = "INSERT INTO RegFinger (Finger1,Finger2,Finger3,Finger4) values (?,?,?,?)"
     val statement = database.prepareStatement(sql)
@@ -97,7 +99,7 @@ fun getFingerData(database: Connection): MutableList<FingerData>{
     return result
 }
 data class AdressData(
-    val adress: String
+    val adress: String, val reg_order : Int
 )
 fun getAdressData(database: Connection, id:Int): MutableList<AdressData>{
     val sql = "SELECT * FROM RegAdress WHERE ID = $id"
@@ -106,7 +108,8 @@ fun getAdressData(database: Connection, id:Int): MutableList<AdressData>{
     val result: MutableList<AdressData> = mutableListOf()
     while (resultSet.next()){
         val adress = resultSet.getNString("Adress")
-        result.add(AdressData(adress))
+        val reg_order = resultSet.getNString("reg_order").toInt()
+        result.add(AdressData(adress, reg_order))
     }
     return result
 }
@@ -119,7 +122,7 @@ fun updateAdressData(database: Connection, data:MutableList<AdressData>, id:Int)
     statement.executeUpdate()
 }
 data class PhoneNumberData(
-    val phoneNumber: String
+    val phoneNumber: String, val reg_order : Int
 )
 fun getPhoneNumberData(database: Connection, id:Int): MutableList<PhoneNumberData>{
     val sql = "SELECT * FROM RegPhoneNumber WHERE ID = $id"
@@ -128,7 +131,8 @@ fun getPhoneNumberData(database: Connection, id:Int): MutableList<PhoneNumberDat
     val result: MutableList<PhoneNumberData> = mutableListOf()
     while (resultSet.next()){
         val phoneNumber = resultSet.getNString("PhoneNumber")
-        result.add(PhoneNumberData(phoneNumber))
+        val reg_order = resultSet.getNString("reg_order").toInt()
+        result.add(PhoneNumberData(phoneNumber, reg_order))
     }
     return result
 }
@@ -141,7 +145,7 @@ fun updatePhoneNumberData(database: Connection, data:MutableList<PhoneNumberData
     statement.executeUpdate()
 }
 data class MemoData(
-    val memo: String
+    val memo: String, val reg_order : Int
 )
 fun getMemoData(database: Connection, id:Int): MutableList<MemoData>{
     val sql = "SELECT * FROM RegMemo WHERE ID = $id"
@@ -150,7 +154,8 @@ fun getMemoData(database: Connection, id:Int): MutableList<MemoData>{
     val result: MutableList<MemoData> = mutableListOf()
     while (resultSet.next()){
         val memo = resultSet.getNString("Memo")
-        result.add(MemoData(memo))
+        val reg_order = resultSet.getNString("reg_order").toInt()
+        result.add(MemoData(memo, reg_order))
     }
     return result
 }
@@ -208,3 +213,11 @@ fun getIndexID(database: Connection):Int {
         -1
     }
 }
+
+
+
+
+
+
+
+
