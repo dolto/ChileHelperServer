@@ -6,6 +6,7 @@ import com.machinezoo.sourceafis.FingerprintTemplate
 import java.awt.image.BufferedImage
 import java.io.*
 import java.lang.Integer.min
+import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.KeyStore
 import java.sql.Connection
@@ -103,19 +104,38 @@ fun main() {
                         println("Josn을 List로 변환 완료")
 
                         val fingers = getFingerData(database)
-                        val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger1))
-                        val proFinger2 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger2))
-                        val proFinger3 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger3))
-                        val proFinger4 = FingerprintTemplate(base64ToFingerprintImage(profile.fingerDB.finger4))
+
+                        val image1 = base64ToBufferedImage(profile.fingerDB.finger1) as BufferedImage
+                        saveBufferedImageToFile(image1, "test1.png")
+                        val image2 = base64ToBufferedImage(profile.fingerDB.finger2) as BufferedImage
+                        saveBufferedImageToFile(image2, "test2.png")
+                        val image3 = base64ToBufferedImage(profile.fingerDB.finger3) as BufferedImage
+                        saveBufferedImageToFile(image3, "test3.png")
+                        val image4 = base64ToBufferedImage(profile.fingerDB.finger4) as BufferedImage
+                        saveBufferedImageToFile(image4, "test4.png")
+
+                        val file_finger1 = Files.readAllBytes(Paths.get("test1.png"));
+                        val file_finger2 = Files.readAllBytes(Paths.get("test2.png"));
+                        val file_finger3 = Files.readAllBytes(Paths.get("test3.png"));
+                        val file_finger4 = Files.readAllBytes(Paths.get("test4.png"));
+
+                        val proFinger1 = FingerprintTemplate(FingerprintImage(file_finger1))
+                        val proFinger2 = FingerprintTemplate(FingerprintImage(file_finger2))
+                        val proFinger3 = FingerprintTemplate(FingerprintImage(file_finger3))
+                        val proFinger4 = FingerprintTemplate(FingerprintImage(file_finger4))
+
 
 
 
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
 
+
                         if (result.first){
                             println("있음")
-                            //profile.id = result.second
-                            updateProfile(database, profile)
+                            profile.id = result.second
+
+                            deleteAllById(database, profile.id);
+                            insert_Data(database, profile)
 
                             getSocketWrite(socketAndIo.output, "Ok".toByteArray(Charsets.UTF_8))//이미 있는 유저를 갱신한다는 뜻
                         }else{
@@ -131,21 +151,35 @@ fun main() {
                         }
                     }
                     "Try_Login" -> {
-                        val finger64 = getSocketRead(socketAndIo.input)
+                        val finger64 = String(getSocketRead(socketAndIo.input), Charsets.UTF_8)
                         //암호화 해제
-                        val finger = gson.fromJson(encoder.encodeToString(finger64), FingerData::class.java)
+                        val finger = gson.fromJson(finger64, FingerData::class.java)
 
                         val fingers = getFingerData(database)
-                        val proFinger1 = FingerprintTemplate(base64ToFingerprintImage(finger.finger1))
-                        val proFinger2 = FingerprintTemplate(base64ToFingerprintImage(finger.finger2))
-                        val proFinger3 = FingerprintTemplate(base64ToFingerprintImage(finger.finger3))
-                        val proFinger4 = FingerprintTemplate(base64ToFingerprintImage(finger.finger4))
+                        val image1 = base64ToBufferedImage(finger.finger1) as BufferedImage
+                        saveBufferedImageToFile(image1, "test1.png")
+                        val image2 = base64ToBufferedImage(finger.finger2) as BufferedImage
+                        saveBufferedImageToFile(image2, "test2.png")
+                        val image3 = base64ToBufferedImage(finger.finger3) as BufferedImage
+                        saveBufferedImageToFile(image3, "test3.png")
+                        val image4 = base64ToBufferedImage(finger.finger4) as BufferedImage
+                        saveBufferedImageToFile(image4, "test4.png")
+
+                        val file_finger1 = Files.readAllBytes(Paths.get("test1.png"));
+                        val file_finger2 = Files.readAllBytes(Paths.get("test2.png"));
+                        val file_finger3 = Files.readAllBytes(Paths.get("test3.png"));
+                        val file_finger4 = Files.readAllBytes(Paths.get("test4.png"));
+
+                        val proFinger1 = FingerprintTemplate(FingerprintImage(file_finger1))
+                        val proFinger2 = FingerprintTemplate(FingerprintImage(file_finger2))
+                        val proFinger3 = FingerprintTemplate(FingerprintImage(file_finger3))
+                        val proFinger4 = FingerprintTemplate(FingerprintImage(file_finger4))
 
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
 
                         if (result.first){
-                            val result = getProfile(database, result.second)
-                            val netMessage = encoder.encode(gson.toJson(result).toByteArray(Charsets.UTF_8))
+                            val return_profile = MergebyId(database, result.second)
+                            val netMessage = return_profile.toByteArray(Charsets.UTF_8)
                             getSocketWrite(socketAndIo.output, netMessage)
                         }
                         else{
@@ -349,8 +383,10 @@ fun base64ToByteArray(base64String: String): ByteArray?{
     return try{
         val base64Decoder = Base64.getDecoder()
         val data = base64Decoder.decode(base64String)
-        val inputStream = ByteArrayInputStream(data)
-        return inputStream.readBytes()
+//        val inputStream = ByteArrayInputStream(data)
+//        val result = inputStream.readBytes()
+//        inputStream.close()
+        return data
     } catch (e: Exception) {
         e.printStackTrace()
         null
@@ -377,10 +413,25 @@ fun fingerMatch(
 ):Pair<Boolean, Int>{
     for (finger in fingers){
         //이제 여기서 profile.finger와 proFinger를 비교
-        val finger1 = FingerprintTemplate(base64ToFingerprintImage(finger.finger1))
-        val finger2 = FingerprintTemplate(base64ToFingerprintImage(finger.finger2))
-        val finger3 = FingerprintTemplate(base64ToFingerprintImage(finger.finger3))
-        val finger4 = FingerprintTemplate(base64ToFingerprintImage(finger.finger4))
+
+        val image1 = base64ToBufferedImage(finger.finger1) as BufferedImage
+        saveBufferedImageToFile(image1, "other_t1.png")
+        val image2 = base64ToBufferedImage(finger.finger2) as BufferedImage
+        saveBufferedImageToFile(image2, "other_t2.png")
+        val image3 = base64ToBufferedImage(finger.finger3) as BufferedImage
+        saveBufferedImageToFile(image3, "other_t3.png")
+        val image4 = base64ToBufferedImage(finger.finger4) as BufferedImage
+        saveBufferedImageToFile(image4, "other_t4.png")
+
+        val file_finger1 = Files.readAllBytes(Paths.get("other_t1.png"));
+        val file_finger2 = Files.readAllBytes(Paths.get("other_t2.png"));
+        val file_finger3 = Files.readAllBytes(Paths.get("other_t3.png"));
+        val file_finger4 = Files.readAllBytes(Paths.get("other_t4.png"));
+
+        val finger1 = FingerprintTemplate(FingerprintImage(file_finger1))
+        val finger2 = FingerprintTemplate(FingerprintImage(file_finger2))
+        val finger3 = FingerprintTemplate(FingerprintImage(file_finger3))
+        val finger4 = FingerprintTemplate(FingerprintImage(file_finger4))
 
         val finger1Matcher = FingerprintMatcher(finger1)
         val finger2Matcher = FingerprintMatcher(finger2)
@@ -391,9 +442,12 @@ fun fingerMatch(
                 finger2Matcher.match(proFinger2)+
                 finger3Matcher.match(proFinger3)+
                 finger4Matcher.match(proFinger4)) / 4
-
+        println("similer1: ${finger1Matcher.match(proFinger1)}")
+        println("similer2: ${finger2Matcher.match(proFinger2)}")
+        println("similer3: ${finger3Matcher.match(proFinger3)}")
+        println("similer4: ${finger4Matcher.match(proFinger4)}")
         if (similer > 40){ //4개의 지문의 유사도의 평균이 40 이상이면 같은사람이라고 취급
-            println("이미 만들어진 프로필 이라고 판단됩니다.")
+            println("이미 만들어진 프로필 이라고 판단됩니다. similer : " + similer)
             return Pair(true, finger.id)
         }
     }
