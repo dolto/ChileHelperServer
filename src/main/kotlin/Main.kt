@@ -93,13 +93,11 @@ fun main() {
                         //socketAndIo.output.writeUTF("result_ok")
                         val profile64 =String(getSocketRead(socketAndIo.input), Charsets.UTF_8)
 
-                        println("연결 되었음" + profile64)
-
                         // 암호화 해제
                         val profile = gson.fromJson(profile64, Profile::class.java)
                         //val profile = Json.decodeFromString<Profile>(profile64)
 
-                        println("연결 되었음" + profile)
+                        println("연결 되었음" )
 
                         println("Josn을 List로 변환 완료")
 
@@ -139,7 +137,7 @@ fun main() {
 
                             getSocketWrite(socketAndIo.output, "Ok".toByteArray(Charsets.UTF_8))//이미 있는 유저를 갱신한다는 뜻
                         }else{
-                            println("ID 없음, Proflie = " + profile)
+                            //println("ID 없음, Proflie = " + profile)
                             val tempid = getIndexID(database) + 1
                             profile.id = tempid
                             println("ID 생성" + profile.id)
@@ -179,12 +177,17 @@ fun main() {
 
                         if (result.first){
                             val return_profile = MergebyId(database, result.second)
+                            //println(return_profile)
                             val netMessage = return_profile.toByteArray(Charsets.UTF_8)
                             getSocketWrite(socketAndIo.output, netMessage)
                         }
                         else{
                             getSocketWrite(socketAndIo.output, "Err".toByteArray(Charsets.UTF_8))//로그인 실패라는 뜻
                         }
+                        File("test1.png").delete();
+                        File("test2.png").delete();
+                        File("test3.png").delete();
+                        File("test4.png").delete();
                     }
 //                    "Input_Image" -> {
 //                        println("이미지를 테스트 수행")
@@ -438,15 +441,27 @@ fun fingerMatch(
         val finger3Matcher = FingerprintMatcher(finger3)
         val finger4Matcher = FingerprintMatcher(finger4)
 
-        val similer = (finger1Matcher.match(proFinger1)+
-                finger2Matcher.match(proFinger2)+
-                finger3Matcher.match(proFinger3)+
-                finger4Matcher.match(proFinger4)) / 4
-        println("similer1: ${finger1Matcher.match(proFinger1)}")
-        println("similer2: ${finger2Matcher.match(proFinger2)}")
-        println("similer3: ${finger3Matcher.match(proFinger3)}")
-        println("similer4: ${finger4Matcher.match(proFinger4)}")
-        if (similer > 40){ //4개의 지문의 유사도의 평균이 40 이상이면 같은사람이라고 취급
+        val similer1 = finger1Matcher.match(proFinger1)
+        val similer2 = finger2Matcher.match(proFinger2)
+        val similer3 = finger3Matcher.match(proFinger3)
+        val similer4 = finger4Matcher.match(proFinger4)
+        val similer = (similer1+
+                similer2+
+                similer3+
+                similer4) / 4
+        println("similer1: ${similer1}")
+        println("similer2: ${similer2}")
+        println("similer3: ${similer3}")
+        println("similer4: ${similer4}")
+
+        File("other_t1.png").delete();
+        File("other_t2.png").delete();
+        File("other_t3.png").delete();
+        File("other_t4.png").delete();
+        if (similer > 15){ //4개의 지문의 유사도의 평균이 40 이상이면 같은사람이라고 취급
+            println("이미 만들어진 프로필 이라고 판단됩니다. similer : " + similer)
+            return Pair(true, finger.id)
+        }else if(similer1 > 20 || similer2 > 20 || similer3 > 20 || similer4 > 20){
             println("이미 만들어진 프로필 이라고 판단됩니다. similer : " + similer)
             return Pair(true, finger.id)
         }
