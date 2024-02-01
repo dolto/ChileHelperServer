@@ -52,7 +52,12 @@ fun insertNametData(connection: Connection, id : Int, data_list : NameData) {
     }
     println("이름 데이터 삽입 성공!")
 }
-
+fun getRandomString(length: Int) : String {
+    val charset = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz0123456789"
+    return (1..length)
+        .map { charset.random() }
+        .joinToString("")
+}
 fun insertFingertData(connection: Connection, id : Int, data_list : FingerData) {
     try {
         // MutableList만큼 반복
@@ -61,10 +66,10 @@ fun insertFingertData(connection: Connection, id : Int, data_list : FingerData) 
         // PreparedStatement를 사용하여 쿼리 실행
         connection.prepareStatement(insertQuery).use { preparedStatement ->
             preparedStatement.setInt(1, id)
-            preparedStatement.setString(2, data_list.finger1)
-            preparedStatement.setString(3, data_list.finger2)
-            preparedStatement.setString(4, data_list.finger3)
-            preparedStatement.setString(5, data_list.finger4)
+            preparedStatement.setString(2, getRandomString(5)+data_list.finger1)
+            preparedStatement.setString(3, getRandomString(5)+data_list.finger2)
+            preparedStatement.setString(4, getRandomString(5)+data_list.finger3)
+            preparedStatement.setString(5, getRandomString(5)+data_list.finger4)
             // 쿼리 실행
             val rowsAffected = preparedStatement.executeUpdate()
             if (rowsAffected > 0) {

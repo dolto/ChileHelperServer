@@ -124,7 +124,6 @@ fun main() {
 
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
 
-
                         if (result.first){
                             println("있음")
                             profile.id = result.second
@@ -419,13 +418,13 @@ fun fingerMatch(
         count+=1;
         thread_list.add(thread(true) {
             //이제 여기서 profile.finger와 proFinger를 비교
-            val image1 = base64ToBufferedImage(finger.finger1) as BufferedImage
+            val image1 = base64ToBufferedImage(finger.finger1.substring(5)) as BufferedImage
             saveBufferedImageToFile(image1, "other_t1"+count+".png")
-            val image2 = base64ToBufferedImage(finger.finger2) as BufferedImage
+            val image2 = base64ToBufferedImage(finger.finger2.substring(5)) as BufferedImage
             saveBufferedImageToFile(image2, "other_t2"+count+".png")
-            val image3 = base64ToBufferedImage(finger.finger3) as BufferedImage
+            val image3 = base64ToBufferedImage(finger.finger3.substring(5)) as BufferedImage
             saveBufferedImageToFile(image3, "other_t3"+count+".png")
-            val image4 = base64ToBufferedImage(finger.finger4) as BufferedImage
+            val image4 = base64ToBufferedImage(finger.finger4.substring(5)) as BufferedImage
             saveBufferedImageToFile(image4, "other_t4"+count+".png")
 
             val file_finger1 = Files.readAllBytes(Paths.get("other_t1"+count+".png"));
