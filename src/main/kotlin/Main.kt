@@ -122,9 +122,6 @@ fun main() {
                         val proFinger3 = FingerprintTemplate(FingerprintImage(file_finger3))
                         val proFinger4 = FingerprintTemplate(FingerprintImage(file_finger4))
 
-
-
-
                         val result = fingerMatch(proFinger1,proFinger2,proFinger3,proFinger4,fingers)
 
 
@@ -414,57 +411,66 @@ fun fingerMatch(
     proFinger4: FingerprintTemplate,
     fingers: MutableList<FingerData>
 ):Pair<Boolean, Int>{
+    var result: Pair<Boolean, Int> = Pair(false, -1);
+    var thread_list = arrayListOf<Thread>();
+    thread_list.ensureCapacity(fingers.size);
+    var count = 0;
     for (finger in fingers){
-        //이제 여기서 profile.finger와 proFinger를 비교
+        count+=1;
+        thread_list.add(thread(true) {
+            //이제 여기서 profile.finger와 proFinger를 비교
+            val image1 = base64ToBufferedImage(finger.finger1) as BufferedImage
+            saveBufferedImageToFile(image1, "other_t1"+count+".png")
+            val image2 = base64ToBufferedImage(finger.finger2) as BufferedImage
+            saveBufferedImageToFile(image2, "other_t2"+count+".png")
+            val image3 = base64ToBufferedImage(finger.finger3) as BufferedImage
+            saveBufferedImageToFile(image3, "other_t3"+count+".png")
+            val image4 = base64ToBufferedImage(finger.finger4) as BufferedImage
+            saveBufferedImageToFile(image4, "other_t4"+count+".png")
 
-        val image1 = base64ToBufferedImage(finger.finger1) as BufferedImage
-        saveBufferedImageToFile(image1, "other_t1.png")
-        val image2 = base64ToBufferedImage(finger.finger2) as BufferedImage
-        saveBufferedImageToFile(image2, "other_t2.png")
-        val image3 = base64ToBufferedImage(finger.finger3) as BufferedImage
-        saveBufferedImageToFile(image3, "other_t3.png")
-        val image4 = base64ToBufferedImage(finger.finger4) as BufferedImage
-        saveBufferedImageToFile(image4, "other_t4.png")
+            val file_finger1 = Files.readAllBytes(Paths.get("other_t1"+count+".png"));
+            val file_finger2 = Files.readAllBytes(Paths.get("other_t2"+count+".png"));
+            val file_finger3 = Files.readAllBytes(Paths.get("other_t3"+count+".png"));
+            val file_finger4 = Files.readAllBytes(Paths.get("other_t4"+count+".png"));
 
-        val file_finger1 = Files.readAllBytes(Paths.get("other_t1.png"));
-        val file_finger2 = Files.readAllBytes(Paths.get("other_t2.png"));
-        val file_finger3 = Files.readAllBytes(Paths.get("other_t3.png"));
-        val file_finger4 = Files.readAllBytes(Paths.get("other_t4.png"));
+            val finger1 = FingerprintTemplate(FingerprintImage(file_finger1))
+            val finger2 = FingerprintTemplate(FingerprintImage(file_finger2))
+            val finger3 = FingerprintTemplate(FingerprintImage(file_finger3))
+            val finger4 = FingerprintTemplate(FingerprintImage(file_finger4))
 
-        val finger1 = FingerprintTemplate(FingerprintImage(file_finger1))
-        val finger2 = FingerprintTemplate(FingerprintImage(file_finger2))
-        val finger3 = FingerprintTemplate(FingerprintImage(file_finger3))
-        val finger4 = FingerprintTemplate(FingerprintImage(file_finger4))
+            val finger1Matcher = FingerprintMatcher(finger1)
+            val finger2Matcher = FingerprintMatcher(finger2)
+            val finger3Matcher = FingerprintMatcher(finger3)
+            val finger4Matcher = FingerprintMatcher(finger4)
 
-        val finger1Matcher = FingerprintMatcher(finger1)
-        val finger2Matcher = FingerprintMatcher(finger2)
-        val finger3Matcher = FingerprintMatcher(finger3)
-        val finger4Matcher = FingerprintMatcher(finger4)
+            val similer1 = finger1Matcher.match(proFinger1)
+            val similer2 = finger2Matcher.match(proFinger2)
+            val similer3 = finger3Matcher.match(proFinger3)
+            val similer4 = finger4Matcher.match(proFinger4)
+            val similer = (similer1+
+                    similer2+
+                    similer3+
+                    similer4) / 4
+            println("similer1: ${similer1}")
+            println("similer2: ${similer2}")
+            println("similer3: ${similer3}")
+            println("similer4: ${similer4}")
 
-        val similer1 = finger1Matcher.match(proFinger1)
-        val similer2 = finger2Matcher.match(proFinger2)
-        val similer3 = finger3Matcher.match(proFinger3)
-        val similer4 = finger4Matcher.match(proFinger4)
-        val similer = (similer1+
-                similer2+
-                similer3+
-                similer4) / 4
-        println("similer1: ${similer1}")
-        println("similer2: ${similer2}")
-        println("similer3: ${similer3}")
-        println("similer4: ${similer4}")
-
-        File("other_t1.png").delete();
-        File("other_t2.png").delete();
-        File("other_t3.png").delete();
-        File("other_t4.png").delete();
-        if (similer > 15){ //4개의 지문의 유사도의 평균이 40 이상이면 같은사람이라고 취급
-            println("이미 만들어진 프로필 이라고 판단됩니다. similer : " + similer)
-            return Pair(true, finger.id)
-        }else if(similer1 > 20 || similer2 > 20 || similer3 > 20 || similer4 > 20){
-            println("이미 만들어진 프로필 이라고 판단됩니다. similer : " + similer)
-            return Pair(true, finger.id)
-        }
+            File("other_t1.png").delete();
+            File("other_t2.png").delete();
+            File("other_t3.png").delete();
+            File("other_t4.png").delete();
+            if (similer > 15){ //4개의 지문의 유사도의 평균이 15 이상이면 같은사람이라고 취급
+                println("이미 만들어진 프로필 이라고 판단됩니다. similer : " + similer)
+                result = Pair(true, finger.id)
+            }else if(similer1 > 20 || similer2 > 20 || similer3 > 20 || similer4 > 20){ // 하나의 지문이라도 유사도가 20 이상이라면 같은사람이라고 취급
+                println("이미 만들어진 프로필 이라고 판단됩니다. similer : " + similer)
+                result = Pair(true, finger.id)
+            }
+        })
     }
-    return Pair(false, -1)
+    for(tl in thread_list){
+        tl.join();
+    }
+    return result;
 }
