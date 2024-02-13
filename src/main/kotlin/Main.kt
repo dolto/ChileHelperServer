@@ -189,6 +189,63 @@ fun main() {
                         File("test3.png").delete();
                         File("test4.png").delete();
                     }
+                    "Sign_in" -> {
+                        val profile64 =String(getSocketRead(socketAndIo.input), Charsets.UTF_8)
+                        val profile = gson.fromJson(profile64, LoginData::class.java)
+
+                        val result = Sign_in(database, profile)
+                        println(result+" 전송")
+
+                        getSocketWrite(socketAndIo.output, result.toByteArray(Charsets.UTF_8))
+                    }
+                    "Sign_up" -> {
+                        val profile64 =String(getSocketRead(socketAndIo.input), Charsets.UTF_8)
+                        val profile = gson.fromJson(profile64, LoginData::class.java)
+
+                        val result = Sign_up(database, profile)
+
+                        getSocketWrite(socketAndIo.output, "회원가입 완료".toByteArray(Charsets.UTF_8))
+                    }
+                    "User_List" ->{
+                        val profile64 =String(getSocketRead(socketAndIo.input), Charsets.UTF_8)
+                        val profile = gson.fromJson(profile64, String::class.java)
+
+                        val setresult = getList_toUserId(database, profile)
+                        val result =gson.toJson(setresult)
+                        getSocketWrite(socketAndIo.output, result.toByteArray(Charsets.UTF_8))
+                    }
+                    "Update_Profile" -> {
+                        //socketAndIo.output.writeUTF("result_ok")
+                        val profile64 =String(getSocketRead(socketAndIo.input), Charsets.UTF_8)
+
+                        // 암호화 해제
+                        val profile = gson.fromJson(profile64, Profile::class.java)
+                        //val profile = Json.decodeFromString<Profile>(profile64)
+
+                        println("연결 되었음" )
+
+                        println("Josn을 List로 변환 완료")
+
+
+                        if (profile.id != -1){
+                            println("있음")
+
+                            deleteAllById(database, profile.id);
+                            insert_Data(database, profile)
+
+                            getSocketWrite(socketAndIo.output, "Ok".toByteArray(Charsets.UTF_8))//이미 있는 유저를 갱신한다는 뜻
+                        }else{
+                            //println("ID 없음, Proflie = " + profile)
+                            val tempid = getIndexID(database) + 1
+                            profile.id = tempid
+                            println("ID 생성" + profile.id)
+
+                            deleteAllById(database, profile.id);
+                            insert_Data(database, profile)
+
+                            getSocketWrite(socketAndIo.output, "Err".toByteArray(Charsets.UTF_8))//이미 있는 유저가 없다는 뜻
+                        }
+                    }
 //                    "Input_Image" -> {
 //                        println("이미지를 테스트 수행")
 //                        val data_size = socketAndIo.input.readInt()

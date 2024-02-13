@@ -22,17 +22,18 @@ fun MergebyId(connection: Connection, id : Int) : String{
 }
 
 fun getNameFromDatabase(connection: Connection, id: Int) : NameData {
-    var merged_Profile_nameDB = NameData(-1, "", "")
+    var merged_Profile_nameDB = NameData(-1, "", "","")
     // 데이터베이스 연결 및 쿼리 실행
     connection.createStatement().use { statement ->
-        val sql = "SELECT ID, Name, ProfileImg  FROM regname WHERE id = $id"
+        val sql = "SELECT ID, Name, ProfileImg, UserID  FROM regname WHERE id = $id"
         statement.executeQuery(sql).use { resultSet ->
             // 결과 처리
             while (resultSet.next()) {
                 val ID = resultSet.getInt("ID")
                 val name = resultSet.getString("Name")
                 val profileimg = resultSet.getString("ProfileImg")
-                merged_Profile_nameDB = NameData(ID, name, profileimg)
+                val UserID = resultSet.getString("UserID")
+                merged_Profile_nameDB = NameData(ID, name,  UserID, profileimg)
             }
         }
     }
