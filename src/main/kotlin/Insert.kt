@@ -30,13 +30,14 @@ fun insert_Data(connection: Connection, profile: Profile){
 fun insertNametData(connection: Connection, id : Int, data_list : NameData) {
     try {
         // MutableList만큼 반복
-        val insertQuery = "INSERT INTO regname (ID, Name, ProfileImg) VALUES (?, ?, ?)"
+        val insertQuery = "INSERT INTO regname (ID, Name, UserID,  ProfileImg) VALUES (?, ?, ?, ?)"
 
         // PreparedStatement를 사용하여 쿼리 실행
         connection.prepareStatement(insertQuery).use { preparedStatement ->
             preparedStatement.setInt(1, id)
             preparedStatement.setString(2, data_list.name)
-            preparedStatement.setString(3, data_list.profile)
+            preparedStatement.setString(3, data_list.UserID)
+            preparedStatement.setString(4, data_list.profile)
             // 쿼리 실행
             val rowsAffected = preparedStatement.executeUpdate()
             if (rowsAffected > 0) {

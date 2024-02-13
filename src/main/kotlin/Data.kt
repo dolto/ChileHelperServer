@@ -3,7 +3,7 @@ import java.sql.Connection
 import java.sql.SQLException
 
 data class NameData(
-    var id: Int, val name: String, val profile: String
+    var id: Int, val name: String, val UserID :String, val profile: String
 )
 fun getNameData(database: Connection, id:Int): NameData?{
     val sql = "SELECT * FROM RegName WHERE ID = $id"
@@ -13,8 +13,8 @@ fun getNameData(database: Connection, id:Int): NameData?{
     while (resultSet.next()){
         val _id = resultSet.getInt("ID")
         val name = resultSet.getNString("Name")
-        val profileimg = resultSet.getNString("ProfileImg")
-        result = NameData(_id, name, profileimg)
+//        val profileimg = resultSet.getNString("ProfileImg")
+//        result = NameData(_id, name, profileimg)
         break
     }
     return result
@@ -41,8 +41,8 @@ fun getNameData(database: Connection): MutableList<NameData>{
     while (resultSet.next()){
         val _id = resultSet.getInt("ID")
         val name = resultSet.getNString("Name")
-        val profileimg = resultSet.getNString("ProfileImg")
-        result.add(NameData(_id, name, profileimg))
+//        val profileimg = resultSet.getNString("ProfileImg")
+//        result.add(NameData(_id, name, profileimg))
     }
     return result
 }
@@ -174,6 +174,9 @@ data class Profile(
     val phoneNumberDB: MutableList<PhoneNumberData>,
     val memoDB: MutableList<MemoData>
 )
+
+data class LoginData(val username: String, val password: String)
+
 fun getProfile(database: Connection, id: Int):Profile{
     val finger = getFingerData(database, id)
     val name = getNameData(database,id)
